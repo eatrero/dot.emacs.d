@@ -9,7 +9,7 @@
 (add-to-list 'package-archives
              '("tromey" . "http://tromey.com/elpa/") t)
 (add-to-list 'package-archives
-             '("melpa" . "http://melpa.milkbox.net/packages/") t)
+             '("melpa" . "http://melpa.org/packages/") t)
 
 ;; (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
 ;;                          ("marmalade" . "http://marmalade-repo.org/packages/")
@@ -20,15 +20,6 @@
 ;; packages are loaded before you start trying to modify them.
 ;; This also sets the load path.
 (package-initialize)
-
-(unless (package-installed-p 'use-package)
-  (package-refresh-contents)
-  (package-install 'use-package))
-
-(eval-when-compile
-  (require 'use-package))
-(require 'diminish)
-(require 'bind-key)
 
 ;; Download the ELPA archive description if needed.
 ;; This informs Emacs about the latest versions of all packages, and
@@ -76,8 +67,9 @@
 
     ;; git integration
     magit
-
-;;    use-package
+    
+    ;;
+    use-package
 ))
 
 ;; On OS X, an Emacs instance started from the graphical user
@@ -143,19 +135,33 @@
 (load "setup-clojure.el")
 (load "setup-js.el")
 
-;; darcula
-(use-package darcula-theme
-  :ensure t
-  :config
-  ;; your preferred main font face here
-  (set-frame-font "Inconsolata-14"))
 
-(use-package multiple-cursors
-  :ensure t)
+;; My custom edits
 
-(global-unset-key (kbd "M-<down-mouse-1>"))
-(global-set-key (kbd "M-<mouse-1>") 'mc/mark-all-like-this)
+(add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
+(defadvice web-mode-highlight-part (around tweak-jsx activate)
+  (if (equal web-mode-content-type "jsx")
+      (let ((web-mode-enable-part-face nil))
+        ad-do-it)
+    ad-do-it))
 
+(use-package flycheck-define-checker)
+
+(flycheck-define-checker jsxhint-checker
+  "A JSX syntax and style checker based on JSXHint."
+
+  :command ("jsxhint" source)
+  :error-patterns
+  ((error line-start (1+ nonl) ": line " line ", col " column ", " (message) line-end))
+  :modes (web-mode))
+(add-hook 'web-mode-hook
+          (lambda ()
+            (when (equal web-mode-content-type "jsx")
+              ;; enable flycheck
+              (flycheck-select-checker 'jsxhint-checker)
+              (flycheck-mode))))
+
+(require 'multiple-cursors)
 
 ;; Projectile Config
 (define-key projectile-mode-map [?\s-d] 'projectile-find-dir)
@@ -189,3 +195,4 @@
 
 ;; Misc other stuff
 ;; add misc here
+
